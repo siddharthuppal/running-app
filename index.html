@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="10K Run">
+<meta name="theme-color" content="#0a1a0e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Road to 10K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a1a0e;
+    --bg2: #111f15;
+    --bg3: #172a1c;
+    --surface: #1a2e1f;
+    --surface2: #1f3525;
+    --green: #1D9E75;
+    --green-light: #5DCAA5;
+    --green-dim: #0F6E56;
+    --green-pale: rgba(29,158,117,0.12);
+    --text: #e8f5ec;
+    --text2: #8aaa92;
+    --text3: #567060;
+    --border: rgba(29,158,117,0.15);
+    --border2: rgba(29,158,117,0.3);
+    --gold: #EF9F27;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  #app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: calc(var(--safe-top) + 18px) 20px 16px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .app-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  .app-title em { font-style: italic; color: var(--green-light); }
+
+  .streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--green-pale);
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--green-light);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .streak-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  /* Stats strip */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .stat {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--green);
+    display: block;
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Progress bar ── */
+  .prog-wrap {
+    height: 3px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green-dim), var(--green-light));
+    transition: width 0.5s ease;
+  }
+
+  /* ── Scroll area ── */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 16px calc(var(--safe-bot) + 80px);
+  }
+
+  /* ── Nav bar ── */
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    display: flex;
+    background: var(--bg2);
+    border-top: 0.5px solid var(--border);
+    padding-bottom: var(--safe-bot);
+    z-index: 100;
+  }
+
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    cursor: pointer;
+    transition: color 0.15s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nav-btn.active { color: var(--green); }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  /* ── Section heading ── */
+  .sec-head {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 20px 0 10px;
+  }
+
+  /* ── Week cards ── */
+  .week-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .week-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--border2);
+    border-radius: 3px 0 0 3px;
+    transition: background 0.15s;
+  }
+
+  .week-card.active::before { background: var(--green); }
+  .week-card.active { border-color: var(--border2); background: var(--surface2); }
+  .week-card.complete::before { background: var(--green-dim); }
+  .week-card.complete { opacity: 0.7; }
+  .week-card.locked { opacity: 0.35; cursor: default; }
+
+  .wc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .wc-num {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .wc-km {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--green);
+  }
+
+  .wc-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .wc-tag {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .wc-progress {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wc-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .wc-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    transition: background 0.2s;
+  }
+
+  .wc-dot.filled { background: var(--green); border-color: var(--green); }
+  .wc-dot.locked-dot { background: var(--bg3); border-color: var(--border); }
+
+  .wc-pct {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── Day panel ── */
+  .day-panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .dp-header {
+    padding: 16px 18px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .dp-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--green);
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+
+  .dp-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .dp-meta {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .day-rows { padding: 8px 12px; }
+
+  .day-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 6px;
+    border-bottom: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    -webkit-user-select: none;
+  }
+
+  .day-row:last-child { border-bottom: none; }
+
+  .day-row.done { opacity: 0.5; }
+
+  .dc {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .day-row.done .dc { background: var(--green); border-color: var(--green); }
+
+  .dc-check {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .day-row.done .dc-check { opacity: 1; }
+
+  .dn { font-size: 13px; font-weight: 500; min-width: 78px; color: var(--text); }
+  .dd { font-size: 13px; color: var(--text2); flex: 1; line-height: 1.35; }
+  .day-row.done .dn, .day-row.done .dd { text-decoration: line-through; text-decoration-color: var(--text3); }
+  .dk { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--green); flex-shrink: 0; }
+  .day-row.done .dk { color: var(--text3); }
+
+  /* milestone day */
+  .day-row.milestone .dn { color: var(--gold); }
+  .day-row.milestone .dk { color: var(--gold); }
+
+  .tip-block {
+    margin: 0 12px 12px;
+    padding: 10px 14px;
+    background: var(--green-pale);
+    border-radius: 10px;
+    border: 0.5px solid var(--border2);
+    display: flex;
+    gap: 10px;
+  }
+
+  .tip-lbl {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tip-txt {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  /* ── Today view ── */
+  .today-hero {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .today-label {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+
+  .today-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+
+  .today-km {
+    font-family: 'DM Mono', monospace;
+    font-size: 36px;
+    font-weight: 500;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .today-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 16px;
+  }
+
+  .big-check-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  .big-check-btn:active { transform: scale(0.98); }
+  .big-check-btn.done-btn { background: var(--surface2); color: var(--text2); }
+
+  .rest-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .rest-icon { font-size: 32px; margin-bottom: 8px; }
+  .rest-title { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .rest-sub { font-size: 13px; color: var(--text2); }
+
+  /* ── Info / tips page ── */
+  .info-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+  }
+
+  .info-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--green-light);
+    margin-bottom: 6px;
+  }
+
+  .info-body {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .phase-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .phase-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--green);
+    line-height: 1;
+    min-width: 32px;
+  }
+
+  .phase-body {}
+  .phase-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .phase-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+  /* ── Locked overlay ── */
+  .locked-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .unlock-btn {
+    margin-top: 10px;
+    padding: 8px 20px;
+    background: none;
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* animations */
+  @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
+  .pop { animation: pop 0.3s ease; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .fade-up { animation: fadeUp 0.25s ease; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">Road to <em>10K</em></div>
+      <div class="streak-badge">
+        <div class="streak-dot"></div>
+        <span id="streakTxt">0 day streak</span>
+      </div>
+    </div>
+    <div class="stats-strip" id="statsStrip"></div>
+  </div>
+
+  <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+
+  <div class="scroll" id="scroll"></div>
+
+  <nav class="nav">
+    <button class="nav-btn active" id="navToday" onclick="showView('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Today
+    </button>
+    <button class="nav-btn" id="navPlan" onclick="showView('plan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Plan
+    </button>
+    <button class="nav-btn" id="navGuide" onclick="showView('guide')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Guide
+    </button>
+  </nav>
+</div>
+
+<script>
+const PLAN=[
+  {title:"Walk/run intro",km:"8–10",tag:"run 1 / walk 2 min",tip:"Keep pace conversational — if you can't speak a sentence, slow down. No ego this week.",
+   days:[{n:"Mon",d:"Run 1 min, walk 2 min × 7",k:2.5,m:false},{n:"Wed",d:"Run 1 min, walk 2 min × 7",k:2.5,m:false},{n:"Fri",d:"Run 1 min, walk 2 min × 8",k:3.0,m:false}]},
+  {title:"Building rhythm",km:"10–12",tag:"run 2 / walk 1 min",tip:"Breathing will start feeling more natural by day 2. Slow is always better than stopping.",
+   days:[{n:"Mon",d:"Run 2 min, walk 1 min × 6",k:3.0,m:false},{n:"Wed",d:"Run 2 min, walk 1 min × 6",k:3.0,m:false},{n:"Sat",d:"Run 2 min, walk 1 min × 8",k:4.0,m:false}]},
+  {title:"First 5-min blocks",km:"12–14",tag:"run 5 / walk 1 min",tip:"You may feel a 'wall' around minute 3–4. Breathe through it — it always passes.",
+   days:[{n:"Tue",d:"Run 5 min, walk 1 min × 4",k:3.5,m:false},{n:"Thu",d:"Run 5 min, walk 1 min × 4",k:3.5,m:false},{n:"Sun",d:"5 min run / 1 walk × 5",k:5.0,m:false}]},
+  {title:"Extend your runs",km:"14–16",tag:"run 8–10 min blocks",tip:"Hips and glutes drive efficient running. Feel the push-off from your back leg on each stride.",
+   days:[{n:"Mon",d:"Run 8 min, walk 1 min × 3",k:4.0,m:false},{n:"Wed",d:"Run 8 min, walk 1 min × 3",k:4.0,m:false},{n:"Sat",d:"10 min run / 1 min walk × 4",k:5.5,m:false}]},
+  {title:"First 20-min run",km:"16–18",tag:"milestone week",tip:"First 20-minute continuous run this week. Finishing matters more than pace — go embarrassingly slow.",
+   days:[{n:"Tue",d:"Run 10 min, walk 1 × 3",k:4.5,m:false},{n:"Thu",d:"Run 15 min, walk 2 × 2",k:5.0,m:false},{n:"Sun",d:"Continuous 20-minute run",k:4.0,m:true}]},
+  {title:"Consolidate 5K",km:"18–20",tag:"run 5K non-stop",tip:"You can now run 5K. Focus on form — relaxed shoulders, easy arms, light footfall.",
+   days:[{n:"Mon",d:"Easy 4K continuous",k:4.0,m:false},{n:"Wed",d:"5K comfortable pace",k:5.0,m:true},{n:"Fri",d:"5K steady pace",k:5.0,m:false}]},
+  {title:"Push to 7K",km:"20–22",tag:"add 1K to long run",tip:"Add 10% max to your long run each week. Resist the urge to go further — the rule exists for a reason.",
+   days:[{n:"Tue",d:"Easy 5K",k:5.0,m:false},{n:"Thu",d:"5K with 2× 2-min tempo",k:5.5,m:false},{n:"Sun",d:"Long run 7K easy",k:7.0,m:false}]},
+  {title:"Hitting 8K",km:"22–24",tag:"longest run yet",tip:"Eat a banana 45 min before the long run. Sip water every 2K — hydration is performance.",
+   days:[{n:"Mon",d:"Recovery 4K easy",k:4.0,m:false},{n:"Wed",d:"5K comfortable pace",k:5.0,m:false},{n:"Sat",d:"Long run 8K easy",k:8.0,m:true}]},
+  {title:"Taper week",km:"14–16",tag:"rest & prepare",tip:"Reduce mileage by 30%. Your legs are storing energy. Trust the taper — it genuinely works.",
+   days:[{n:"Tue",d:"Easy 4K shakeout",k:4.0,m:false},{n:"Thu",d:"3K easy + strides",k:3.0,m:false},{n:"Sat",d:"2K easy shakeout",k:2.0,m:false}]},
+  {title:"Race week — 10K!",km:"10K",tag:"you made it",tip:"Start 30 seconds per km slower than you think you should. The second half is where races are won.",
+   days:[{n:"Mon",d:"Rest or 20-min walk",k:0,m:false},{n:"Wed",d:"2K easy jog + 4 strides",k:2.0,m:false},{n:"Race",d:"Your 10K — enjoy every step",k:10.0,m:true}]}
+];
+
+// State
+let state = { done: {}, selectedWeek: null, view: 'today' };
+function save() { try { localStorage.setItem('r10k2', JSON.stringify(state.done)); } catch(e){} }
+function load() { try { state.done = JSON.parse(localStorage.getItem('r10k2') || '{}'); } catch(e){} }
+load();
+
+// Computed
+function wprog(wi) {
+  let d=0; PLAN[wi].days.forEach((_,di)=>{ if(state.done[wi+'-'+di]) d++; });
+  return { d, t: PLAN[wi].days.length };
+}
+function unlocked(wi) {
+  if(wi===0) return true;
+  const p = wprog(wi-1);
+  return p.d >= Math.ceil(p.t * 0.5);
+}
+function totalDone() { return Object.values(state.done).filter(Boolean).length; }
+function totalSessions() { return PLAN.reduce((s,w)=>s+w.days.length,0); }
+function totalKm() {
+  let k=0;
+  PLAN.forEach((w,wi)=>w.days.forEach((d,di)=>{ if(state.done[wi+'-'+di]) k+=d.k; }));
+  return k;
+}
+function currentWeek() {
+  for(let i=PLAN.length-1;i>=0;i--) {
+    const p=wprog(i);
+    if(p.d>0) return i;
+  }
+  return 0;
+}
+function todaySession() {
+  const wi = currentWeek();
+  const w = PLAN[wi];
+  for(let di=0;di<w.days.length;di++) {
+    if(!state.done[wi+'-'+di]) return { wi, di, day: w.days[di], week: w };
+  }
+  // week done — check next
+  if(wi+1 < PLAN.length && unlocked(wi+1)) {
+    const w2 = PLAN[wi+1];
+    for(let di=0;di<w2.days.length;di++) {
+      if(!state.done[(wi+1)+'-'+di]) return { wi:wi+1, di, day:w2.days[di], week:w2 };
+    }
+  }
+  return null;
+}
+function streak() {
+  let s=0;
+  for(let i=PLAN.length-1;i>=0;i--) {
+    for(let di=PLAN[i].days.length-1;di>=0;di--) {
+      if(state.done[i+'-'+di]) s++; else if(s>0) return s;
+    }
+  }
+  return s;
+}
+
+// Render
+function renderHeader() {
+  const km = totalKm(), done = totalDone(), total = totalSessions();
+  document.getElementById('statsStrip').innerHTML =
+    `<div class="stat"><span class="stat-val">${Math.round(km)}</span><div class="stat-lbl">km logged</div></div>`+
+    `<div class="stat"><span class="stat-val">${done}</span><div class="stat-lbl">sessions</div></div>`+
+    `<div class="stat"><span class="stat-val">${Math.round(done/total*100)}%</span><div class="stat-lbl">complete</div></div>`;
+  const pct = done/total*100;
+  document.getElementById('progFill').style.width = pct+'%';
+  const s=streak();
+  document.getElementById('streakTxt').textContent = s===1?'1 day streak':s+' day streak';
+}
+
+function showView(v) {
+  state.view = v;
+  ['navToday','navPlan','navGuide'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById('nav'+v.charAt(0).toUpperCase()+v.slice(1)).classList.add('active');
+  if(v==='today') renderToday();
+  else if(v==='plan') renderPlan();
+  else renderGuide();
+  document.getElementById('scroll').scrollTop=0;
+}
+
+function renderToday() {
+  const sess = todaySession();
+  let html = '';
+  if(!sess) {
+    // All done!
+    html = `<div class="today-hero fade-up"><div class="today-label">You did it</div>
+      <div class="today-title">10K Complete! 🎉</div>
+      <div class="today-km">10K</div>
+      <div class="today-sub">You've completed the entire plan. Incredible work.</div></div>`;
+  } else {
+    const {wi,di,day,week} = sess;
+    const k=wi+'-'+di;
+    const isDone=!!state.done[k];
+    const isRest=day.k===0;
+    if(isRest) {
+      html=`<div class="rest-card fade-up">
+        <div class="rest-icon">🌿</div>
+        <div class="rest-title">Rest day</div>
+        <div class="rest-sub">Recovery is where fitness is built. Take it easy today.</div>
+      </div>`;
+    } else {
+      html=`<div class="today-hero fade-up">
+        <div class="today-label">Week ${wi+1} · Next session</div>
+        <div class="today-title">${day.d}</div>
+        <div class="today-km">${day.k}<span style="font-size:16px;color:var(--text2)"> km</span></div>
+        <div class="today-sub">${week.tag}</div>
+        <button class="big-check-btn ${isDone?'done-btn':''}" onclick="toggleToday(${wi},${di})">
+          ${isDone ? '✓ Session logged' : 'Log this session'}
+        </button>
+      </div>
+      <div class="tip-block fade-up"><span class="tip-lbl">tip</span><span class="tip-txt">${week.tip}</span></div>`;
+    }
+  }
+
+  // Upcoming
+  const cw = currentWeek();
+  html += `<div class="sec-head">This week</div>`;
+  PLAN[cw].days.forEach((day,di) => {
+    const k=cw+'-'+di, isDone=!!state.done[k];
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;margin-bottom:8px;opacity:${isDone?0.5:1}">
+      <div class="dc" style="${isDone?'background:var(--green);border-color:var(--green)':''}">
+        ${isDone?'<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+      </div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text);${isDone?'text-decoration:line-through;text-decoration-color:var(--text3)':''}">${day.n} — ${day.d}</div></div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:${isDone?'var(--text3)':'var(--green)'};">${day.k>0?day.k+' km':'rest'}</div>
+    </div>`;
+  });
+
+  document.getElementById('scroll').innerHTML = html;
+}
+
+function toggleToday(wi,di) {
+  const k=wi+'-'+di;
+  state.done[k]=!state.done[k];
+  save(); renderHeader(); renderToday();
+  // pop animation
+  const btn = document.querySelector('.big-check-btn');
+  if(btn){ btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
+}
+
+function renderPlan() {
+  if(state.selectedWeek !== null) { renderWeekDetail(state.selectedWeek); return; }
+  let html = '';
+  PLAN.forEach((week,wi) => {
+    const p=wprog(wi), u=unlocked(wi), isC=p.d===p.t, isCur=wi===currentWeek();
+    let cls='week-card'+(isC?' complete':'')+(isCur&&!isC?' active':'')+((!u)?' locked':'');
+    let dots='';
+    week.days.forEach((_,di)=>{
+      dots+=`<div class="wc-dot ${!u?'locked-dot':(state.done[wi+'-'+di]?'filled':'')}"></div>`;
+    });
+    html+=`<div class="${cls}" onclick="${u?'openWeek('+wi+')':''}">
+      <div class="wc-top"><span class="wc-num">Week ${wi+1}</span><span class="wc-km">${week.km} km</span></div>
+      <div class="wc-title">${week.title}</div>
+      <div class="wc-tag">${week.tag}</div>
+      <div class="wc-progress">
+        <div class="wc-dots">${dots}</div>
+        <span class="wc-pct">${u?p.d+'/'+p.t+' done':'locked'}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('scroll').innerHTML = `<div style="height:4px"></div>${html}`;
+}
+
+function openWeek(wi) {
+  state.selectedWeek=wi;
+  renderWeekDetail(wi);
+  document.getElementById('scroll').scrollTop=0;
+}
+
+function renderWeekDetail(wi) {
+  const week=PLAN[wi];
+  if(!unlocked(wi)) {
+    document.getElementById('scroll').innerHTML=`
+      <button class="dp-back" onclick="closePlan()">← back</button>
+      <div class="locked-card fade-up">
+        <div style="font-size:14px;color:var(--text2);margin-bottom:8px;">Complete at least half of week ${wi} to unlock this.</div>
+        <button class="unlock-btn" onclick="forceUnlock(${wi})">Unlock anyway</button>
+      </div>`;
+    return;
+  }
+  const p=wprog(wi);
+  let rows='';
+  week.days.forEach((day,di)=>{
+    const k=wi+'-'+di, isDone=!!state.done[k];
+    const kmTxt=day.k>0?day.k+' km':'—';
+    rows+=`<div class="day-row ${isDone?'done':''} ${day.m?'milestone':''}" onclick="toggleDay(${wi},${di})">
+      <div class="dc">${isDone?'<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</div>
+      <div class="dn">${day.n}</div>
+      <div class="dd">${day.d}</div>
+      <div class="dk">${kmTxt}</div>
+    </div>`;
+  });
+  document.getElementById('scroll').innerHTML=`
+    <button class="dp-back" onclick="closePlan()">← all weeks</button>
+    <div class="day-panel fade-up">
+      <div class="dp-header">
+        <div class="dp-title">Week ${wi+1} — ${week.title}</div>
+        <div class="dp-meta">${week.tag} · ${p.d}/${p.t} sessions done</div>
+      </div>
+      <div class="day-rows">${rows}</div>
+      <div class="tip-block"><span class="tip-lbl">tip</span><span class="tip-txt">${week.tip}</span></div>
+    </div>`;
+}
+
+function closePlan() { state.selectedWeek=null; renderPlan(); }
+
+function toggleDay(wi,di) {
+  const k=wi+'-'+di; state.done[k]=!state.done[k];
+  save(); renderHeader(); renderWeekDetail(wi);
+}
+
+function forceUnlock(wi) {
+  PLAN[wi-1].days.forEach((_,di)=>{ state.done[(wi-1)+'-'+di]=true; });
+  save(); renderHeader(); renderWeekDetail(wi);
+}
+
+function renderGuide() {
+  document.getElementById('scroll').innerHTML=`
+    <div class="sec-head">The plan at a glance</div>
+    <div class="phase-card fade-up"><div class="phase-num">1–5</div><div class="phase-body"><div class="phase-title">Build to 5K</div><div class="phase-desc">Walk/run intervals gradually give way to continuous running. You'll run your first non-stop 5K in week 6.</div></div></div>
+    <div class="phase-card fade-up"><div class="phase-num">6–8</div><div class="phase-body"><div class="phase-title">Push to 8K</div><div class="phase-desc">Long runs extend 1K each week. You'll hit 8K feeling strong by end of week 8.</div></div></div>
+    <div class="phase-card fade-up"><div class="phase-num">9</div><div class="phase-body"><div class="phase-title">Taper</div><div class="phase-desc">Mileage drops 30%. Your body stores energy. Trust it — this is where you get faster.</div></div></div>
+    <div class="phase-card fade-up"><div class="phase-num">10</div><div class="phase-body"><div class="phase-title" style="color:var(--gold)">Race week 🎉</div><div class="phase-desc">Two easy shakeout runs, then your 10K. You've earned this.</div></div></div>
+
+    <div class="sec-head" style="margin-top:20px">Essential tips</div>
+    <div class="info-card fade-up"><div class="info-title">The talk test</div><div class="info-body">If you can't hold a short conversation while running, you're going too fast. Most beginners run 60–90 seconds per km too fast. Slow down — you'll go farther and recover better.</div></div>
+    <div class="info-card fade-up"><div class="info-title">Shoes matter most</div><div class="info-body">Visit a running store and get properly fitted before your first run. Wrong shoes cause most beginner injuries. You don't need expensive — just fitted to your foot type.</div></div>
+    <div class="info-card fade-up"><div class="info-title">The 10% rule</div><div class="info-body">Never increase your weekly mileage by more than 10%. This plan respects that. Don't try to catch up if you miss a week — just pick up where you left off.</div></div>
+    <div class="info-card fade-up"><div class="info-title">Warm up & cool down</div><div class="info-body">5 minutes of brisk walking before each run, 5 minutes of easy walking after. Stretch calves, hamstrings, and hip flexors post-run when muscles are warm.</div></div>
+    <div class="info-card fade-up"><div class="info-title">Rest days are training days</div><div class="info-body">Fitness is built during recovery, not during the run. Sleep, hydration, and nutrition on rest days matter as much as the sessions themselves.</div></div>
+  `;
+}
+
+// Service worker
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// Init
+renderHeader();
+renderToday();
+</script>
+</body>
+</html>
