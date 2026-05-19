@@ -7,6 +7,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="10K Run">
 <meta name="theme-color" content="#0a1a0e">
+<!-- Content Security Policy -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://www.gstatic.com 'unsafe-inline';
+  style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+  font-src https://fonts.gstatic.com;
+  connect-src https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+  img-src 'self' data: https://lh3.googleusercontent.com https://www.gstatic.com;
+">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <title>Road to 10K</title>
@@ -53,7 +62,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* iOS Safari fill-available fallback */
   @supports (-webkit-touch-callout: none) {
     html, body { height: -webkit-fill-available; }
   }
@@ -86,6 +94,13 @@
     margin-bottom: 14px;
   }
 
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
   .app-title {
     font-family: 'DM Serif Display', serif;
     font-size: 22px;
@@ -113,6 +128,47 @@
     border-radius: 50%;
     background: var(--gold);
   }
+
+  .sync-badge {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* User avatar */
+  .user-area {
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    object-fit: cover;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .user-avatar:hover { opacity: 0.8; }
+
+  .signout-btn {
+    font-size: 10px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+
+  .signout-btn:hover { color: var(--text2); }
 
   /* Stats strip */
   .stats-strip {
@@ -387,7 +443,6 @@
   .dk { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--green); flex-shrink: 0; }
   .day-row.done .dk { color: var(--text3); }
 
-  /* milestone day */
   .day-row.milestone .dn { color: var(--gold); }
   .day-row.milestone .dk { color: var(--gold); }
 
@@ -558,6 +613,76 @@
     cursor: pointer;
   }
 
+  /* ── Sign-in overlay ── */
+  .signin-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: calc(var(--safe-top) + 24px) 24px calc(var(--safe-bot) + 24px);
+  }
+
+  .signin-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: 20px;
+    padding: 36px 24px 28px;
+    text-align: center;
+    max-width: 320px;
+    width: 100%;
+  }
+
+  .signin-icon { font-size: 44px; margin-bottom: 14px; }
+
+  .signin-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .signin-title em { font-style: italic; color: var(--green-light); }
+
+  .signin-sub {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.55;
+    margin-bottom: 28px;
+  }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 20px;
+    min-height: 44px;
+    background: #fff;
+    color: #1f1f1f;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+
+  .google-btn:hover { opacity: 0.92; }
+  .google-btn:active { transform: scale(0.98); }
+  .google-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .signin-error {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #e57373;
+    min-height: 18px;
+  }
+
   /* animations */
   @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
   .pop { animation: pop 0.3s ease; }
@@ -571,9 +696,16 @@
   <div class="header">
     <div class="header-top">
       <div class="app-title">Road to <em>10K</em></div>
-      <div class="streak-badge">
-        <div class="streak-dot"></div>
-        <span id="streakTxt">0 day streak</span>
+      <div class="header-meta">
+        <div class="user-area" id="userArea">
+          <img id="userAvatar" class="user-avatar" src="" alt="Profile" title="Click to sign out">
+          <button class="signout-btn" id="signoutBtn">Sign out</button>
+        </div>
+        <div class="streak-badge">
+          <div class="streak-dot"></div>
+          <span id="streakTxt">0 day streak</span>
+        </div>
+        <div class="sync-badge" id="syncStatus">Local only</div>
       </div>
     </div>
     <div class="stats-strip" id="statsStrip"></div>
@@ -599,7 +731,31 @@
   </nav>
 </div>
 
-<script>
+<!-- Google Sign-In overlay (shown only when Firebase is configured) -->
+<div id="signinOverlay" class="signin-overlay">
+  <div class="signin-card fade-up">
+    <div class="signin-icon">🏃</div>
+    <div class="signin-title">Road to <em>10K</em></div>
+    <p class="signin-sub">Sign in with Google to sync your training progress across all your devices.</p>
+    <button class="google-btn" id="googleSignInBtn">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.07 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="signin-error" id="signinError"></div>
+  </div>
+</div>
+
+<script type="module">
+import { firebaseConfig, firebaseOptions } from './firebase-config.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js';
+import { doc, getDoc, getFirestore, onSnapshot, serverTimestamp, setDoc } from 'https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js';
+
 const PLAN=[
   {title:"Walk/run intro",km:"8–10",tag:"run 1 / walk 2 min",tip:"Keep pace conversational — if you can't speak a sentence, slow down. No ego this week.",
    days:[{n:"Mon",d:"Run 1 min, walk 2 min × 7",k:2.5,m:false},{n:"Wed",d:"Run 1 min, walk 2 min × 7",k:2.5,m:false},{n:"Fri",d:"Run 1 min, walk 2 min × 8",k:3.0,m:false}]},
@@ -623,11 +779,108 @@ const PLAN=[
    days:[{n:"Mon",d:"Rest or 20-min walk",k:0,m:false},{n:"Wed",d:"2K easy jog + 4 strides",k:2.0,m:false},{n:"Race",d:"Your 10K — enjoy every step",k:10.0,m:true}]}
 ];
 
-// State
+const LOCAL_STORAGE_KEY = 'r10k2';
+const FIRESTORE_APP_DOC_ID = firebaseOptions.appDocumentId || 'road-to-10k';
+
 let state = { done: {}, selectedWeek: null, view: 'today' };
-function save() { try { localStorage.setItem('r10k2', JSON.stringify(state.done)); } catch(e){} }
-function load() { try { state.done = JSON.parse(localStorage.getItem('r10k2') || '{}'); } catch(e){} }
-load();
+const syncState = {
+  mode: 'local',
+  userId: null,
+  ready: false,
+  loading: false,
+  saving: false,
+  lastError: '',
+  applyingRemote: false,
+  pendingWrite: false,
+  docRef: null,
+  unsubscribe: null
+};
+
+function normalizeDone(input) {
+  if (!input || typeof input !== 'object') return {};
+  return Object.entries(input).reduce((acc, [key, value]) => {
+    acc[key] = !!value;
+    return acc;
+  }, {});
+}
+
+function persistLocal() {
+  try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.done)); } catch(e){}
+}
+
+function loadLocal() {
+  try { state.done = normalizeDone(JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}')); } catch(e){}
+}
+
+function isFirebaseConfigured() {
+  return !!(
+    firebaseOptions.enabled &&
+    firebaseConfig &&
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId
+  );
+}
+
+function currentDoneSnapshot() {
+  return JSON.stringify(state.done);
+}
+
+function applyDone(nextDone) {
+  state.done = normalizeDone(nextDone);
+  persistLocal();
+  renderHeader();
+  if(state.view === 'today') renderToday();
+  else if(state.view === 'plan') renderPlan();
+  else renderGuide();
+}
+
+function renderSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if (!isFirebaseConfigured()) { el.textContent = 'Local only'; return; }
+  if (syncState.lastError) { el.textContent = 'Cloud error'; return; }
+  if (syncState.loading) { el.textContent = 'Syncing...'; return; }
+  if (syncState.saving) { el.textContent = 'Saving...'; return; }
+  if (syncState.ready) { el.textContent = 'Cloud synced'; return; }
+  el.textContent = 'Cloud setup';
+}
+
+function queueRemoteSave() {
+  if (!syncState.docRef || syncState.applyingRemote) return;
+  syncState.pendingWrite = true;
+  if (!syncState.saving) flushRemoteSave();
+}
+
+async function flushRemoteSave() {
+  if (!syncState.pendingWrite || !syncState.docRef || syncState.applyingRemote) return;
+  syncState.pendingWrite = false;
+  syncState.saving = true;
+  syncState.lastError = '';
+  renderSyncStatus();
+  try {
+    await setDoc(syncState.docRef, {
+      done: normalizeDone(state.done),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    syncState.ready = true;
+  } catch (error) {
+    syncState.lastError = error?.message || 'Failed to save';
+    syncState.pendingWrite = true;
+  } finally {
+    syncState.saving = false;
+    renderSyncStatus();
+    if (syncState.pendingWrite) flushRemoteSave();
+  }
+}
+
+function save() {
+  persistLocal();
+  queueRemoteSave();
+}
+
+loadLocal();
 
 // Computed
 function wprog(wi) {
@@ -659,7 +912,6 @@ function todaySession() {
   for(let di=0;di<w.days.length;di++) {
     if(!state.done[wi+'-'+di]) return { wi, di, day: w.days[di], week: w };
   }
-  // week done — check next
   if(wi+1 < PLAN.length && unlocked(wi+1)) {
     const w2 = PLAN[wi+1];
     for(let di=0;di<w2.days.length;di++) {
@@ -689,6 +941,7 @@ function renderHeader() {
   document.getElementById('progFill').style.width = pct+'%';
   const s=streak();
   document.getElementById('streakTxt').textContent = s===1?'1 day streak':s+' day streak';
+  renderSyncStatus();
 }
 
 function showView(v) {
@@ -705,7 +958,6 @@ function renderToday() {
   const sess = todaySession();
   let html = '';
   if(!sess) {
-    // All done!
     html = `<div class="today-hero fade-up"><div class="today-label">You did it</div>
       <div class="today-title">10K Complete! 🎉</div>
       <div class="today-km">10K</div>
@@ -735,7 +987,6 @@ function renderToday() {
     }
   }
 
-  // Upcoming
   const cw = currentWeek();
   html += `<div class="sec-head">This week</div>`;
   PLAN[cw].days.forEach((day,di) => {
@@ -756,7 +1007,6 @@ function toggleToday(wi,di) {
   const k=wi+'-'+di;
   state.done[k]=!state.done[k];
   save(); renderHeader(); renderToday();
-  // pop animation
   const btn = document.querySelector('.big-check-btn');
   if(btn){ btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
 }
@@ -854,14 +1104,135 @@ function renderGuide() {
   `;
 }
 
-// Service worker
 if('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
-// Init
+async function initFirebaseSync() {
+  if (!isFirebaseConfigured()) {
+    renderSyncStatus();
+    return;
+  }
+
+  const overlay = document.getElementById('signinOverlay');
+  const signInBtn = document.getElementById('googleSignInBtn');
+  const errorEl = document.getElementById('signinError');
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    syncState.mode = 'cloud';
+    syncState.loading = true;
+    renderSyncStatus();
+
+    signInBtn.addEventListener('click', async () => {
+      signInBtn.disabled = true;
+      errorEl.textContent = '';
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        errorEl.textContent = err?.message || 'Sign-in failed. Please try again.';
+        signInBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('userAvatar').addEventListener('click', () => handleSignOut(auth));
+    document.getElementById('signoutBtn').addEventListener('click', () => handleSignOut(auth));
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        syncState.loading = false;
+        syncState.ready = false;
+        if (syncState.unsubscribe) { syncState.unsubscribe(); syncState.unsubscribe = null; }
+        overlay.style.display = 'flex';
+        document.getElementById('userArea').style.display = 'none';
+        renderSyncStatus();
+        return;
+      }
+
+      overlay.style.display = 'none';
+
+      const avatarEl = document.getElementById('userAvatar');
+      if (user.photoURL) {
+        avatarEl.src = user.photoURL;
+        avatarEl.alt = user.displayName || 'Profile';
+      } else {
+        avatarEl.style.display = 'none';
+        document.getElementById('signoutBtn').style.marginLeft = '0';
+      }
+      document.getElementById('userArea').style.display = 'flex';
+
+      syncState.userId = user.uid;
+      syncState.docRef = doc(db, 'users', user.uid, 'apps', FIRESTORE_APP_DOC_ID);
+
+      try {
+        const localSnapshot = currentDoneSnapshot();
+        const remoteSnap = await getDoc(syncState.docRef);
+        const remoteDone = remoteSnap.exists() ? normalizeDone(remoteSnap.data().done) : null;
+
+        if (remoteDone && Object.keys(remoteDone).length) {
+          if (JSON.stringify(remoteDone) !== localSnapshot) {
+            syncState.applyingRemote = true;
+            applyDone(remoteDone);
+            syncState.applyingRemote = false;
+          }
+        } else if (Object.keys(state.done).length) {
+          queueRemoteSave();
+        }
+
+        if (syncState.unsubscribe) syncState.unsubscribe();
+        syncState.unsubscribe = onSnapshot(syncState.docRef, snapshot => {
+          if (!snapshot.exists()) return;
+          const remote = normalizeDone(snapshot.data().done);
+          if (JSON.stringify(remote) === currentDoneSnapshot()) return;
+          syncState.applyingRemote = true;
+          applyDone(remote);
+          syncState.applyingRemote = false;
+        }, error => {
+          syncState.lastError = error?.message || 'Live sync failed';
+          renderSyncStatus();
+        });
+
+        syncState.ready = true;
+        syncState.lastError = '';
+      } catch (error) {
+        syncState.lastError = error?.message || 'Cloud sync failed';
+      } finally {
+        syncState.loading = false;
+        renderSyncStatus();
+      }
+    });
+
+  } catch (error) {
+    syncState.loading = false;
+    syncState.lastError = error?.message || 'Firebase init failed';
+    renderSyncStatus();
+  }
+}
+
+async function handleSignOut(auth) {
+  if (syncState.unsubscribe) { syncState.unsubscribe(); syncState.unsubscribe = null; }
+  syncState.ready = false;
+  syncState.userId = null;
+  syncState.docRef = null;
+  await firebaseSignOut(auth);
+}
+
+Object.assign(window, {
+  showView,
+  toggleToday,
+  openWeek,
+  closePlan,
+  toggleDay,
+  forceUnlock
+});
+
 renderHeader();
 renderToday();
+initFirebaseSync();
 </script>
 </body>
 </html>

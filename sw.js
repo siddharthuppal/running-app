@@ -1,4 +1,4 @@
-const CACHE = 'road-to-10k-v1';
+const CACHE = 'road-to-10k-v3';
 const BASE = self.location.pathname.replace('/sw.js', '');
 const ASSETS = [
   BASE + '/index.html',
