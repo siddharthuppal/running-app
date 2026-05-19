@@ -3,3 +3,8 @@
 Thumbs.db
 .vscode/
 *.swp
+
+# Local dev
+node_modules/
+package.json
+package-lock.json
